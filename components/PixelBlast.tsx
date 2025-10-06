@@ -545,10 +545,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         const { fx, fy, w, h } = mapToPixels(e);
         touch.addTouch({ x: fx / w, y: fy / h });
       };
-      if ((renderer.domElement as any)?.addEventListener) {
-        renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: true });
-        renderer.domElement.addEventListener('pointermove', onPointerMove, { passive: true });
-      }
+      // Note: Direct event listeners replaced with React event handling
+      // The canvas will be wrapped with React event handlers instead
       let raf = 0;
       const animate = () => {
         if (autoPauseOffscreen && !visibilityRef.current.visible) {
@@ -648,12 +646,41 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     speed
   ]);
 
+  // React event handlers instead of addEventListener
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!threeRef.current) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const scaleX = threeRef.current.renderer.domElement.width / rect.width
+    const scaleY = threeRef.current.renderer.domElement.height / rect.height
+    const fx = (e.clientX - rect.left) * scaleX
+    const fy = (rect.height - (e.clientY - rect.top)) * scaleY
+    
+    const ix = threeRef.current.clickIx ?? 0
+    threeRef.current.uniforms.uClickPos.value[ix].set(fx, fy)
+    threeRef.current.uniforms.uClickTimes.value[ix] = threeRef.current.uniforms.uTime.value
+    threeRef.current.clickIx = (ix + 1) % MAX_CLICKS
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!threeRef.current?.touch) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const scaleX = threeRef.current.renderer.domElement.width / rect.width
+    const scaleY = threeRef.current.renderer.domElement.height / rect.height
+    const fx = (e.clientX - rect.left) * scaleX
+    const fy = (rect.height - (e.clientY - rect.top)) * scaleY
+    const w = threeRef.current.renderer.domElement.width
+    const h = threeRef.current.renderer.domElement.height
+    threeRef.current.touch.addTouch({ x: fx / w, y: fy / h })
+  }
+
   return (
     <div
       ref={containerRef}
       className="absolute inset-0 w-full h-full overflow-hidden"
       style={style}
       aria-label="PixelBlast interactive background"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
     />
   );
 };

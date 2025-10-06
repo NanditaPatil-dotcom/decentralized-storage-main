@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { useToast } from '@/hooks/use-toast'
 import {
   Toast,
@@ -11,7 +12,20 @@ import {
 } from '@/components/ui/toast'
 
 export function Toaster() {
+  const [mounted, setMounted] = React.useState(false)
   const { toasts } = useToast()
+
+  React.useEffect(() => {
+    // Only mount on client-side
+    if (typeof window !== 'undefined') {
+      setMounted(true)
+    }
+  }, [])
+
+  // Don't render during SSR or until client is ready
+  if (!mounted || typeof window === 'undefined') {
+    return null
+  }
 
   return (
     <ToastProvider>

@@ -1,7 +1,10 @@
 "use client"
 
-import { createHelia, type Helia } from "helia"
-import { unixfs as createUnixfs, type UnixFS } from "@helia/unixfs"
+// Dynamic imports to avoid SSR issues
+let createHelia: any = null
+let createUnixfs: any = null
+type Helia = any
+type UnixFS = any
 
 let heliaSingleton: Promise<{ helia: Helia; unixfs: UnixFS }> | null = null
 let activeHelia: Helia | null = null // prevent re-init in React strict mode
@@ -16,9 +19,30 @@ export async function getBrowserHelia() {
 
     // ✅ Wait until the DOM is fully ready before initializing Helia
     await new Promise<void>((resolve) => {
-      if (document.readyState === "complete") resolve()
-      else window.addEventListener("load", () => resolve(), { once: true })
+      if (document.readyState === "complete") {
+        resolve()
+      } else {
+        // Use timer instead of addEventListener
+        const checkReady = () => {
+          if (document.readyState === "complete") {
+            resolve()
+          } else {
+            setTimeout(checkReady, 50)
+          }
+        }
+        setTimeout(checkReady, 50)
+      }
     })
+
+    // Load Helia dynamically only when needed
+    if (!createHelia) {
+      const heliaModule = await import("helia")
+      createHelia = heliaModule.createHelia
+    }
+    if (!createUnixfs) {
+      const unixfsModule = await import("@helia/unixfs")
+      createUnixfs = unixfsModule.unixfs
+    }
 
     // ✅ Prevent double initialization
     if (activeHelia) {
@@ -49,47 +73,90 @@ export async function stopBrowserHelia() {
 }
 
 export async function addFile(input: Blob | ArrayBuffer | Uint8Array) {
+  // Validate input
+  if (!input) {
+    throw new Error("No input provided to addFile")
+  }
+  
   const inst = await getBrowserHelia().catch((e) => {
     throw new Error(`Helia init failed: ${e?.message || e}`)
   })
   const { unixfs } = inst || ({} as any)
   if (!unixfs || typeof (unixfs as any).addBytes !== "function") {
     throw new Error("Helia unixfs not available")
+  }
+
+  let bytes: Uint8Array
+  try {
+    if (input instanceof Blob) {
+      bytes = new Uint8Array(await input.arrayBuffer())
+    } else if (input instanceof ArrayBuffer) {
+      bytes = new Uint8Array(input)
+    } else if (input instanceof Uint8Array) {
+      bytes = input
+    } else {
+      throw new Error("Unsupported input type")
+    }
+    
+    // Validate bytes array
+    if (!bytes || bytes.length === 0) {
+      throw new Error("Empty or invalid file data")
+    }
+  } catch (e: any) {
+    throw new Error(`Failed to convert input to bytes: ${e?.message || e}`)
+  }
+
+  try {
+    // Additional safety check before calling addBytes
+    if (!(bytes instanceof Uint8Array)) {
+      throw new Error("Bytes is not a Uint8Array: " + bytes?.constructor?.name)
+    }
+    
+    const cid = await unixfs.addBytes(bytes)
+    if (!cid) {
+      throw new Error("Failed to generate CID")
+    }
+    return cid.toString()
+  } catch (e: any) {
+    // Check if it's the IPLD undefined error
+    if (e?.message?.includes?.('undefined') && e?.message?.includes?.('IPLD')) {
+      throw new Error("File contains invalid data that cannot be stored in IPFS")
+    }
+    throw new Error(`Failed to add file to IPFS: ${e?.message || e}`)
+  }
+}
+
+export async function addFileViaHttp(input: Blob | ArrayBuffer | Uint8Array) {
+  if (typeof window === "undefined") {
+    throw new Error("addFileViaHttp must run in the browser")
   }
 
   const bytes =
     input instanceof Blob
-      ? new Uint8Array(await input.arrayBuffer())
+      ? await input.arrayBuffer()
       : input instanceof ArrayBuffer
-      ? new Uint8Array(input)
+      ? input
       : input
 
-  const cid = await unixfs.addBytes(bytes)
-  return cid.toString()
-}
+  // Use a public IPFS HTTP gateway for fallback upload
+  const gatewayUrl = "https://gateway.pinata.cloud/ipfs/"
 
-export async function addFiles(
-  files: Array<{ name: string; data: Blob | ArrayBuffer | Uint8Array }>
-) {
-  const inst = await getBrowserHelia().catch((e) => {
-    throw new Error(`Helia init failed: ${e?.message || e}`)
-  })
-  const { unixfs } = inst || ({} as any)
-  if (!unixfs || typeof (unixfs as any).addBytes !== "function") {
-    throw new Error("Helia unixfs not available")
+  try {
+    const response = await fetch(gatewayUrl, {
+      method: 'POST',
+      body: bytes,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP upload failed: ${response.status} ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    return result.IpfsHash || result.Hash || result.cid?.toString() || result.hash
+  } catch (error: any) {
+    throw new Error(`Failed to upload via HTTP: ${error?.message || error}`)
   }
-
-  const results: Array<{ name: string; cid: string }> = []
-  for (const f of files) {
-    const bytes =
-      f.data instanceof Blob
-        ? new Uint8Array(await (f.data as Blob).arrayBuffer())
-        : f.data instanceof ArrayBuffer
-        ? new Uint8Array(f.data as ArrayBuffer)
-        : (f.data as Uint8Array)
-    const cid = await unixfs.addBytes(bytes)
-    results.push({ name: f.name, cid: cid.toString() })
-  }
-
-  return results
 }

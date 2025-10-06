@@ -3,27 +3,31 @@ import * as React from 'react'
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  const [isMobile, setIsMobile] = React.useState<boolean>(false)
+  const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    }
-    if (typeof mql.addEventListener === 'function') {
-      mql.addEventListener('change', onChange)
-    } else if (typeof (mql as any).addListener === 'function') {
-      ;(mql as any).addListener(onChange)
-    }
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => {
-      if (typeof mql.removeEventListener === 'function') {
-        mql.removeEventListener('change', onChange)
-      } else if (typeof (mql as any).removeListener === 'function') {
-        ;(mql as any).removeListener(onChange)
+    setMounted(true)
+    
+    // Initial check - no event listeners needed
+    const checkSize = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
       }
+    }
+    
+    checkSize()
+    
+    // Use timer instead of resize listener for periodic checks
+    const interval = setInterval(checkSize, 500)
+    
+    return () => {
+      clearInterval(interval)
     }
   }, [])
 
-  return !!isMobile
+  // Return false during SSR
+  if (!mounted) return false
+  
+  return isMobile
 }

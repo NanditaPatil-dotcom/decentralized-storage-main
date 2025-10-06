@@ -5,9 +5,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { FileUpload } from "@/components/file-upload"
-import { OrbitFileList } from "@/components/orbit-file-list"
-import { useToast } from "@/hooks/use-toast"
+import { 
+  DynamicFileUpload as FileUpload,
+  DynamicOrbitFileList as OrbitFileList
+} from "@/components/dynamic-client-components"
+import { useToast } from "@/components/ui/simple-toast"
 
 export default function Page() {
   const router = useRouter()

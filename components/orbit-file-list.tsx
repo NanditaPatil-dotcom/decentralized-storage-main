@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getFilesStore, listFilesByWallet, deleteFileDoc } from "@/lib/orbitdb-browser"
+import { getFilesStore, listFilesByWallet, deleteFileDoc, resetOrbitDB } from "@/lib/orbitdb-browser"
 
 type Props = { userAddress: string | null }
 
@@ -59,20 +59,60 @@ export function OrbitFileList({ userAddress }: Props) {
   }, [items])
 
   useEffect(() => {
+    // Only run in browser environment after DOM is ready
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return
+    }
+
     let active = true
-    ;(async () => {
+    
+    const initOrbitDB = async () => {
       try {
         if (!userAddress) {
           setItems([])
           return
         }
+        
+        // Wait for DOM to be fully ready before initializing OrbitDB
+        await new Promise<void>((resolve) => {
+          if (document.readyState === "complete") {
+            resolve()
+          } else {
+            const checkReady = () => {
+              if (document.readyState === "complete") {
+                resolve()
+              } else {
+                setTimeout(checkReady, 100)
+              }
+            }
+            setTimeout(checkReady, 100)
+          }
+        })
+        
+        // Additional delay to ensure all browser APIs are ready
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
         await getFilesStore()
         const docs = await listFilesByWallet(userAddress)
         if (active) setItems(docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)))
       } catch (e: any) {
-        if (active) setError(e?.message || "Unable to load files")
+        console.error("OrbitDB error:", e)
+        if (active) {
+          // Check if it's an addEventListener error and provide specific guidance
+          const isAddEventListenerError = e?.message?.includes?.('addEventListener') || 
+                                         e?.message?.includes?.('addListener') ||
+                                         e?.message?.includes?.('properties of undefined')
+          if (isAddEventListenerError) {
+            setError("Browser compatibility issue detected. Please refresh the page or try a different browser.")
+          } else {
+            setError(e?.message || "Unable to load files")
+          }
+        }
       }
-    })()
+    }
+    
+    // Start initialization
+    initOrbitDB()
     // start polling for realtime-like updates
     if (timerRef.current) clearInterval(timerRef.current)
     if (userAddress) {
@@ -91,22 +131,66 @@ export function OrbitFileList({ userAddress }: Props) {
 
   async function refresh() {
     if (!userAddress) return
-    const docs = await listFilesByWallet(userAddress)
-    setItems(docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)))
+    try {
+      const docs = await listFilesByWallet(userAddress)
+      setItems(docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)))
+      setError(null) // Clear any previous errors
+    } catch (e: any) {
+      console.error("OrbitDB refresh error:", e)
+      const isAddEventListenerError = e?.message?.includes?.('addEventListener') || 
+                                     e?.message?.includes?.('addListener') ||
+                                     e?.message?.includes?.('properties of undefined')
+      
+      const isIPLDUndefinedError = e?.message?.includes?.('undefined') && e?.message?.includes?.('IPLD')
+      
+      if (isIPLDUndefinedError) {
+        setError("Data validation error: undefined values detected in OrbitDB")
+      } else if (isAddEventListenerError) {
+        setError("Browser compatibility issue detected. Please refresh the page or try a different browser.")
+      } else {
+        setError(e?.message || "Unable to refresh files")
+      }
+    }
   }
 
   async function handleRename(item: FileItem) {
     const newName = prompt("Enter new filename", item.filename)
     if (!newName || newName.trim() === item.filename) return
-    const store = await getFilesStore()
-    await store.put({ ...item, filename: newName.trim() })
-    await refresh()
+    try {
+      const store = await getFilesStore()
+      await store.put({ ...item, filename: newName.trim() })
+      await refresh()
+    } catch (e: any) {
+      console.error("Rename error:", e)
+      setError(e?.message || "Failed to rename file")
+    }
   }
 
   async function handleDelete(item: FileItem) {
     if (!confirm(`Delete ${item.filename}?`)) return
-    await deleteFileDoc(item._id)
-    await refresh()
+    try {
+      await deleteFileDoc(item._id)
+      await refresh()
+    } catch (e: any) {
+      console.error("Delete error:", e)
+      setError(e?.message || "Failed to delete file")
+    }
+  }
+
+  async function handleResetOrbitDB() {
+    if (!confirm("Reset OrbitDB? This will clear all local database state and you may need to re-upload files.")) return
+    try {
+      setError(null)
+      setItems(null)
+      await resetOrbitDB()
+      // Force a refresh after reset
+      setTimeout(() => {
+        refresh().catch(console.error)
+      }, 1000)
+    } catch (e: any) {
+      console.error("Reset error:", e)
+      setError("Failed to reset OrbitDB: " + (e?.message || e))
+    }
   }
 
   if (!userAddress) {
@@ -124,7 +208,19 @@ export function OrbitFileList({ userAddress }: Props) {
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-red-600">{error}</p>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={refresh}>
+            Try Again
+          </Button>
+          <Button size="sm" variant="destructive" onClick={handleResetOrbitDB}>
+            Reset OrbitDB
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   if (!items || items.length === 0) {

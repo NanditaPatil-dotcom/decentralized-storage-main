@@ -6,11 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { WalletConnect } from "@/components/wallet-connect"
-import { useToast } from "@/hooks/use-toast"
-import PixelBlast from "@/components/PixelBlast"
-import GlowingFeatureCards from "@/components/glowing-feature-cards"
-import CardNav from "@/components/card-nav"
+// Removed direct import - using dynamic version
+import { useToast } from "@/components/ui/simple-toast"
+import { 
+  DynamicPixelBlast as PixelBlast, 
+  DynamicGlowingFeatureCards as GlowingFeatureCards,
+  DynamicCardNav as CardNav,
+  DynamicWalletConnect as WalletConnect
+} from "@/components/dynamic-client-components"
 
 export default function HomePage() {
   const [address, setAddress] = useState<string | null>(null)

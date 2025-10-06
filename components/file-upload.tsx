@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/simple-toast"
 import { addFile, addFileViaHttp } from "@/lib/helia-browser"
-import { putFileDoc } from "@/lib/orbitdb-browser"
+import { putFileDoc, validateAndSanitizeForIPLD } from "@/lib/orbitdb-browser"
 import { useHelia } from "@/hooks/useHelia"
 
 declare global {
@@ -39,17 +39,38 @@ export function FileUpload({ userAddress }: Props) {
   ]
 
   function validateFile(f: File) {
+    // Comprehensive file validation
+    if (!f) {
+      throw new Error("No file provided")
+    }
+    if (!f.name || f.name.trim().length === 0) {
+      throw new Error("File must have a valid name")
+    }
+    if (f.size === undefined || f.size === null) {
+      throw new Error("File size is undefined")
+    }
+    if (f.size === 0) {
+      throw new Error("File cannot be empty")
+    }
     if (f.size > MAX_SIZE_BYTES) {
       throw new Error("File too large (max 50MB)")
     }
+    
+    // Type validation (warning only for now)
     const okType = ACCEPTED_TYPES.some((t) => t.endsWith("/") ? f.type.startsWith(t) : f.type === t)
-    if (!okType) {
-      // Allow unknown types but warn user; comment this line to hard-block
+    if (!okType && f.type) {
+      // Allow unknown types but warn user; uncomment next line to hard-block
       // throw new Error("Unsupported file type")
     }
   }
 
   const handleUpload = async () => {
+    // Browser environment check
+    if (typeof window === "undefined") {
+      toast({ title: "Upload failed", description: "Not in browser environment", variant: "destructive" })
+      return
+    }
+
     if (!userAddress) {
       toast({ title: "Connect your wallet first", variant: "destructive" })
       return
@@ -65,12 +86,24 @@ export function FileUpload({ userAddress }: Props) {
 
     try {
       setUploading(true)
+      
+      // Safety checks before processing
+      if (!file || !file.name || file.size === undefined || file.size === null) {
+        throw new Error("Invalid file data - missing name or size")
+      }
+      
       validateFile(file)
 
       // 1) Upload to IPFS via Helia (browser), fallback to HTTP client
       let fileCid = ""
       try {
         const bytes = new Uint8Array(await file.arrayBuffer())
+        
+        // Additional validation of bytes array
+        if (!bytes || bytes.length === 0) {
+          throw new Error("File appears to be empty or corrupted")
+        }
+        
         try {
           fileCid = await addFile(bytes)
         } catch (e) {
@@ -79,22 +112,35 @@ export function FileUpload({ userAddress }: Props) {
       } catch (e: any) {
         throw new Error(e?.message || "Failed to add file to IPFS (Helia)")
       }
+      
+      // Validate CID was generated
+      if (!fileCid || typeof fileCid !== 'string') {
+        throw new Error("Failed to generate valid CID for uploaded file")
+      }
+      
       setCid(fileCid)
       toast({ title: "File uploaded to IPFS", description: `CID: ${fileCid}` })
 
       // 2) Store metadata in OrbitDB
       try {
-        await putFileDoc({
+        // Create document with all required fields
+        const rawDoc = {
           _id: `${userAddress}:${fileCid}`,
           wallet: userAddress,
           cid: fileCid,
-          filename: file.name,
-          size: file.size,
+          filename: file.name || "unknown",
+          size: file.size || 0,
           mime: file.type || "application/octet-stream",
           createdAt: Date.now(),
-          folder: folder.trim() || undefined,
           tags: tags.split(",").map(s => s.trim()).filter(Boolean),
-        })
+          // Only add folder if it has a value
+          ...(folder.trim() && { folder: folder.trim() })
+        }
+        
+        // Validate and sanitize using utility function
+        const safeDoc = validateAndSanitizeForIPLD(rawDoc, ['_id', 'wallet', 'cid', 'filename'])
+        
+        await putFileDoc(safeDoc)
       } catch (e: any) {
         throw new Error(e?.message || "Failed to store metadata in OrbitDB")
       }

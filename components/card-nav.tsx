@@ -49,7 +49,8 @@ const CardNav: React.FC<CardNavProps> = ({
     const navEl = navRef.current
     if (!navEl) return 260
 
-    const isMobile = window.matchMedia('(max-width: 768px)').matches
+    // Only check for mobile if window is available
+    const isMobile = typeof window !== "undefined" && window.matchMedia ? window.matchMedia('(max-width: 768px)').matches : false
     if (isMobile) {
       const contentEl = navEl.querySelector('.card-nav-content') as HTMLElement
       if (contentEl) {
@@ -110,32 +111,8 @@ const CardNav: React.FC<CardNavProps> = ({
     }
   }, [ease, items])
 
-  useLayoutEffect(() => {
-    const handleResize = () => {
-      if (!tlRef.current) return
-
-      if (isExpanded) {
-        const newHeight = calculateHeight()
-        gsap.set(navRef.current, { height: newHeight })
-
-        tlRef.current.kill()
-        const newTl = createTimeline()
-        if (newTl) {
-          newTl.progress(1)
-          tlRef.current = newTl
-        }
-      } else {
-        tlRef.current.kill()
-        const newTl = createTimeline()
-        if (newTl) {
-          tlRef.current = newTl
-        }
-      }
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [isExpanded])
+  // Note: Resize listener removed to avoid addEventListener
+  // Navigation will use fixed dimensions
 
   const toggleMenu = () => {
     const tl = tlRef.current

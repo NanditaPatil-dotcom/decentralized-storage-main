@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/simple-toast"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -32,6 +32,9 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
   const { toast } = useToast()
   
   function openMetaMaskOnboardingWindow() {
+    // Only run in browser environment
+    if (typeof window === "undefined") return
+    
     // Open MetaMask download/onboarding in a compact popup
     const url = "https://metamask.io/download.html"
     window.open(
@@ -42,37 +45,89 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
   }
 
   useEffect(() => {
-    if (!window.ethereum) return
-    window.ethereum.on?.("accountsChanged", (accounts: string[]) => {
-      if (accounts && accounts.length > 0) {
-        setAddress(accounts[0])
-        onConnected?.(accounts[0])
-      } else {
-        setAddress(null)
-        onDisconnected?.()
-      }
-    })
-    window.ethereum.on?.("chainChanged", (chainId: string) => {
-      setChainOk(chainId === AMOY_CHAIN_ID_HEX)
-    })
-    ;(async () => {
+    // Only run in browser environment after DOM is ready
+    if (typeof window === "undefined" || typeof document === "undefined") return
+    
+    // Store event handler references for cleanup
+    let accountsHandler: ((accounts: string[]) => void) | null = null
+    let chainHandler: ((chainId: string) => void) | null = null
+    
+    // Wait for DOM ready state
+    const initWallet = () => {
+      if (!window.ethereum) return
+      
+      // Add better safety checks for MetaMask provider
       try {
-        const accounts: string[] = await window.ethereum.request({ method: "eth_accounts" })
-        if (accounts && accounts.length) {
-          setAddress(accounts[0])
-          onConnected?.(accounts[0])
+        // Ensure the provider is ready and has event listener capability
+        if (window.ethereum && typeof window.ethereum.on === 'function') {
+          accountsHandler = (accounts: string[]) => {
+            if (accounts && accounts.length > 0) {
+              setAddress(accounts[0])
+              onConnected?.(accounts[0])
+            } else {
+              setAddress(null)
+              onDisconnected?.()
+            }
+          }
+          
+          chainHandler = (chainId: string) => {
+            setChainOk(chainId === AMOY_CHAIN_ID_HEX)
+          }
+          
+          window.ethereum.on("accountsChanged", accountsHandler)
+          window.ethereum.on("chainChanged", chainHandler)
         }
-        const chainId: string = await window.ethereum.request({ method: "eth_chainId" })
-        setChainOk(chainId === AMOY_CHAIN_ID_HEX)
-      } catch {
-        // ignore
+      } catch (error) {
+        console.warn('MetaMask event listeners could not be added:', error)
       }
-    })()
+      ;(async () => {
+        try {
+          const accounts: string[] = await window.ethereum.request({ method: "eth_accounts" })
+          if (accounts && accounts.length) {
+            setAddress(accounts[0])
+            onConnected?.(accounts[0])
+          }
+          const chainId: string = await window.ethereum.request({ method: "eth_chainId" })
+          setChainOk(chainId === AMOY_CHAIN_ID_HEX)
+        } catch {
+          // ignore
+        }
+      })()
+    }
+    
+    if (document.readyState === "complete") {
+      initWallet()
+    } else {
+      const checkReady = () => {
+        if (document.readyState === "complete") {
+          initWallet()
+        } else {
+          setTimeout(checkReady, 100)
+        }
+      }
+      setTimeout(checkReady, 100)
+    }
+    
+    // Cleanup function to remove event listeners
+    return () => {
+      if (window.ethereum && typeof window.ethereum.removeListener === 'function') {
+        try {
+          if (accountsHandler) {
+            window.ethereum.removeListener("accountsChanged", accountsHandler)
+          }
+          if (chainHandler) {
+            window.ethereum.removeListener("chainChanged", chainHandler)
+          }
+        } catch (error) {
+          console.warn('Could not remove MetaMask event listeners:', error)
+        }
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function ensureAmoy() {
-    if (!window.ethereum) return
+    if (typeof window === "undefined" || !window.ethereum) return
     try {
       const chainId: string = await window.ethereum.request({ method: "eth_chainId" })
       if (chainId === AMOY_CHAIN_ID_HEX) {
@@ -106,7 +161,7 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
   }
 
   async function connect() {
-    if (!window.ethereum) {
+    if (typeof window === "undefined" || !window.ethereum) {
       openMetaMaskOnboardingWindow()
       toast({
         title: "MetaMask required",
