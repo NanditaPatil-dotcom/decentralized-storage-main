@@ -1,6 +1,6 @@
 # Decentralized File Storage (Polygon Amoy)
 
-A React + Next.js DApp that uploads files to IPFS via NFT.Storage and stores their CIDs on-chain using a Solidity contract deployed to Polygon Amoy (80002).
+A React + Next.js DApp that uploads files to IPFS via OrbitDB and stores their CIDs on-chain using a Solidity contract deployed to Polygon Amoy (80002).
 
 ## Tech
 
@@ -39,7 +39,7 @@ Frontend (React)
         |--> Calls contract.getFiles(userAddress)
         |--> Gets CID list
         >
-Pinata Gateway / IPFS
+       IPFS
         |--> https://ipfs.io/ipfs/<CID>
         >
 User (Downloads/Views File)
