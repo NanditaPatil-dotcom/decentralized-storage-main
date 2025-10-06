@@ -54,7 +54,7 @@ export const DynamicGlowingFeatureCards = dynamic(
   }
 )
 
-// Dynamic FileUpload component - uses IPFS/OrbitDB internally
+// Dynamic FileUpload component
 export const DynamicFileUpload = dynamic(
   () => import('@/components/file-upload').then(mod => ({ default: mod.FileUpload })),
   {
@@ -71,20 +71,6 @@ export const DynamicFileUpload = dynamic(
   }
 )
 
-// Dynamic OrbitFileList component - uses OrbitDB internally  
-export const DynamicOrbitFileList = dynamic(
-  () => import('@/components/orbit-file-list').then(mod => ({ default: mod.OrbitFileList })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid gap-2">
-        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-      </div>
-    ),
-  }
-)
 
 // Dynamic WalletConnect component - uses Web3 providers internally
 export const DynamicWalletConnect = dynamic(
@@ -104,5 +90,4 @@ export type PixelBlastProps = ComponentProps<typeof DynamicPixelBlast>
 export type CardNavProps = ComponentProps<typeof DynamicCardNav>
 export type GlowingFeatureCardsProps = ComponentProps<typeof DynamicGlowingFeatureCards>
 export type FileUploadProps = ComponentProps<typeof DynamicFileUpload>
-export type OrbitFileListProps = ComponentProps<typeof DynamicOrbitFileList>
 export type WalletConnectProps = ComponentProps<typeof DynamicWalletConnect>

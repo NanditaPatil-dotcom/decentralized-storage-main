@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { 
-  DynamicFileUpload as FileUpload,
-  DynamicOrbitFileList as OrbitFileList
+  DynamicFileUpload as FileUpload
 } from "@/components/dynamic-client-components"
+import { ServerFileList } from "@/components/server-file-list"
 import { useToast } from "@/components/ui/simple-toast"
 
 export default function Page() {
@@ -71,7 +71,7 @@ export default function Page() {
       <section className="container mx-auto px-4 py-8 grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-pretty">Upload a File to IPFS</CardTitle>
+<CardTitle className="text-pretty">Upload a File</CardTitle>
           </CardHeader>
           <CardContent>
             <FileUpload userAddress={address} />
@@ -84,10 +84,10 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Files are uploaded to IPFS (Helia). Metadata is managed locally via OrbitDB per wallet.
+              Files uploaded via the server route are stored on Filebase (S3/IPFS) and indexed in Supabase.
             </p>
             <Separator className="my-4" />
-            <OrbitFileList userAddress={address} />
+            <ServerFileList userAddress={address} />
           </CardContent>
         </Card>
       </section>

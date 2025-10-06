@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/simple-toast"
-import { addFile, addFileViaHttp } from "@/lib/helia-browser"
-import { putFileDoc, validateAndSanitizeForIPLD } from "@/lib/orbitdb-browser"
-import { useHelia } from "@/hooks/useHelia"
+import { uploadToServer } from "@/lib/server-upload"
+import { Progress } from "@/components/ui/progress"
 
 declare global {
   interface Window {
@@ -21,12 +20,10 @@ type Props = {
 }
 
 export function FileUpload({ userAddress }: Props) {
-  const { ready, error: heliaError } = useHelia()
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [cid, setCid] = useState<string | null>(null)
-  const [folder, setFolder] = useState<string>("")
-  const [tags, setTags] = useState<string>("")
+  const [progress, setProgress] = useState<number>(0)
   const { toast } = useToast()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -79,13 +76,10 @@ export function FileUpload({ userAddress }: Props) {
       toast({ title: "No file selected", variant: "destructive" })
       return
     }
-    if (!ready) {
-      toast({ title: "IPFS node starting…", description: "Please wait a moment and try again." })
-      return
-    }
 
     try {
       setUploading(true)
+      setProgress(0)
       
       // Safety checks before processing
       if (!file || !file.name || file.size === undefined || file.size === null) {
@@ -94,63 +88,31 @@ export function FileUpload({ userAddress }: Props) {
       
       validateFile(file)
 
-      // 1) Upload to IPFS via Helia (browser), fallback to HTTP client
-      let fileCid = ""
+      // Server-side upload via Filebase S3
       try {
-        const bytes = new Uint8Array(await file.arrayBuffer())
-        
-        // Additional validation of bytes array
-        if (!bytes || bytes.length === 0) {
-          throw new Error("File appears to be empty or corrupted")
+        const result = await uploadToServer(file, userAddress, (p) => setProgress(p))
+        const cidFromServer = (result.CID || (result as any).cid || null)
+        if (!cidFromServer) {
+          throw new Error("Server did not return a CID")
         }
-        
+        setCid(cidFromServer)
+        toast({ 
+          title: "File uploaded",
+          description: `CID: ${cidFromServer}` 
+        })
+        // Notify server-file-list to refresh
         try {
-          fileCid = await addFile(bytes)
-        } catch (e) {
-          fileCid = await addFileViaHttp(bytes)
-        }
+          window.dispatchEvent(new CustomEvent("server-upload-complete", { detail: { walletAddress: userAddress, CID: cidFromServer, fileName: file.name, timestamp: new Date().toISOString() } }))
+        } catch {}
+        setProgress(100)
       } catch (e: any) {
-        throw new Error(e?.message || "Failed to add file to IPFS (Helia)")
-      }
-      
-      // Validate CID was generated
-      if (!fileCid || typeof fileCid !== 'string') {
-        throw new Error("Failed to generate valid CID for uploaded file")
-      }
-      
-      setCid(fileCid)
-      toast({ title: "File uploaded to IPFS", description: `CID: ${fileCid}` })
-
-      // 2) Store metadata in OrbitDB
-      try {
-        // Create document with all required fields
-        const rawDoc = {
-          _id: `${userAddress}:${fileCid}`,
-          wallet: userAddress,
-          cid: fileCid,
-          filename: file.name || "unknown",
-          size: file.size || 0,
-          mime: file.type || "application/octet-stream",
-          createdAt: Date.now(),
-          tags: tags.split(",").map(s => s.trim()).filter(Boolean),
-          // Only add folder if it has a value
-          ...(folder.trim() && { folder: folder.trim() })
-        }
-        
-        // Validate and sanitize using utility function
-        const safeDoc = validateAndSanitizeForIPLD(rawDoc, ['_id', 'wallet', 'cid', 'filename'])
-        
-        await putFileDoc(safeDoc)
-      } catch (e: any) {
-        throw new Error(e?.message || "Failed to store metadata in OrbitDB")
+        throw new Error(e?.message || "Failed to upload to server")
       }
 
       // Reset form and redirect to dashboard for next upload
       setTimeout(() => {
         setFile(null)
         setCid(null)
-        setFolder("")
-        setTags("")
         // Clear file input value
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
@@ -180,28 +142,27 @@ export function FileUpload({ userAddress }: Props) {
         <p className="text-xs text-muted-foreground">Max 50MB. Images, PDF, and text are recommended.</p>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="folder">Folder (optional)</Label>
-        <Input id="folder" value={folder} onChange={(e) => setFolder(e.target.value)} disabled={uploading} />
-      </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="tags">Tags (comma-separated)</Label>
-        <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} disabled={uploading} />
-      </div>
-
+      {uploading && (
+        <div className="grid gap-2">
+          <Label>Upload progress</Label>
+          <Progress value={progress} />
+          <div className="text-xs text-muted-foreground">{progress}%</div>
+        </div>
+      )}
 
       <Button
         onClick={handleUpload}
         disabled={!file || uploading}
       >
-        {uploading ? "Uploading…" : "Upload"}
+        {uploading ? `Uploading… ${progress}%` : `Upload`}
       </Button>
 
       {cid && (
         <div className="p-3 bg-black-50 border rounded-md">
           <p className="text-sm font-medium text-green-800 mb-2">File uploaded successfully!</p>
-            </div>
+          <p className="text-xs break-all">CID: {cid}</p>
+        </div>
       )}
     </div>
   )
