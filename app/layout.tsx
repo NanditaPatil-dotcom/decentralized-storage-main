@@ -8,7 +8,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Decentralized File Storage',
-  description: 'Store files on IPFS via Pinata and save CIDs on-chain',
+  description: 'Store files on IPFS (Helia) with OrbitDB metadata and optional on-chain CIDs',
   generator: 'v0.app',
 }
 

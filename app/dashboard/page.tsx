@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { FileUpload } from "@/components/file-upload"
-import { FileList } from "@/components/file-list"
+import { OrbitFileList } from "@/components/orbit-file-list"
 import { useToast } from "@/hooks/use-toast"
 
 export default function Page() {
@@ -82,10 +82,10 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Files are uploaded to IPFS via Pinata. The resulting CID is saved on-chain under your address.
+              Files are uploaded to IPFS (Helia). Metadata is managed locally via OrbitDB per wallet.
             </p>
             <Separator className="my-4" />
-            <FileList userAddress={address} />
+            <OrbitFileList userAddress={address} />
           </CardContent>
         </Card>
       </section>

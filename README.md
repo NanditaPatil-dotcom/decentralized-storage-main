@@ -6,7 +6,7 @@ A React + Next.js DApp that uploads files to IPFS via NFT.Storage and stores the
 
 - Next.js (App Router), Tailwind
 - ethers.js + MetaMask
-- IPFS via Pinata (server-side API key usage) (1 GB as free tier)
+- IPFS via Helia (no custodial pinning, runs in-browser)
 - Solidity contract for user => CID[] mapping
 
 ## To access your storage:
@@ -14,9 +14,7 @@ A React + Next.js DApp that uploads files to IPFS via NFT.Storage and stores the
 - select polygon almoy as the testnet
 - pump the currency(POL) in the wallet for the gas
 - depending on the wallet balance, the files get uploaded
-- also, create your pinata account and add a new key
-- enter the jwt key to the website (safe and encrypted)
-- the jwt is received directly by pinata, no server involved
+- no Pinata account/JWT is required
 
 ## codeflow:
 1.User (Browser w/ MetaMask)
@@ -25,9 +23,9 @@ A React + Next.js DApp that uploads files to IPFS via NFT.Storage and stores the
         >
 Backend API (Express/Node.js)
         |--> Receives file via POST /upload
-        |--> Calls Pinata API with JWT
+        |--> Adds file to IPFS via Helia (in browser)
         >
-Pinata (IPFS Storage)
+        IPFS (Helia / public gateways)
         |--> Returns CID (Qm...123)
         >
 Backend
@@ -42,7 +40,7 @@ Frontend (React)
         |--> Gets CID list
         >
 Pinata Gateway / IPFS
-        |--> https://gateway.pinata.cloud/ipfs/<CID>
+        |--> https://ipfs.io/ipfs/<CID>
         >
 User (Downloads/Views File)
 

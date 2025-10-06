@@ -545,12 +545,10 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         const { fx, fy, w, h } = mapToPixels(e);
         touch.addTouch({ x: fx / w, y: fy / h });
       };
-      renderer.domElement.addEventListener('pointerdown', onPointerDown, {
-        passive: true
-      });
-      renderer.domElement.addEventListener('pointermove', onPointerMove, {
-        passive: true
-      });
+      if ((renderer.domElement as any)?.addEventListener) {
+        renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: true });
+        renderer.domElement.addEventListener('pointermove', onPointerMove, { passive: true });
+      }
       let raf = 0;
       const animate = () => {
         if (autoPauseOffscreen && !visibilityRef.current.visible) {

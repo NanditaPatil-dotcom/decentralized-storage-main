@@ -12,9 +12,7 @@ declare global {
   }
 }
 
-type Props = {
-  userAddress: string | null
-}
+type Props = { userAddress: string | null }
 
 async function fetchFiles(userAddress: string): Promise<string[]> {
   if (!window.ethereum) throw new Error("MetaMask not available")
@@ -25,24 +23,15 @@ async function fetchFiles(userAddress: string): Promise<string[]> {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum)
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
-
-    console.log('Calling getFiles for address:', userAddress)
-    console.log('Contract address:', CONTRACT_ADDRESS)
-
     const files: string[] = await contract.getFiles(userAddress)
-    console.log('Raw result from contract:', files)
     return files
   } catch (error: any) {
-    console.error('Contract call error:', error)
-
     if (error.code === 'BAD_DATA' || error.message.includes('could not decode result data')) {
       throw new Error(`Contract data decode error. Make sure you're connected to Polygon Amoy testnet and the contract is deployed correctly. Contract: ${CONTRACT_ADDRESS}`)
     }
-
     if (error.code === 'CALL_EXCEPTION') {
-      throw new Error(`Contract call failed. Check if MetaMask is connected to Polygon Amoy testnet (Chain ID: 80002)`)
+      throw new Error(`Contract call failed. Check if MetaMask is connected to Polygon Amoy testnet (Chain ID: 80002)`) 
     }
-
     throw error
   }
 }
@@ -53,6 +42,25 @@ export function FileList({ userAddress }: Props) {
     () => fetchFiles(userAddress as string),
     { revalidateOnFocus: true },
   )
+
+  async function handleRename(item: FileItem) {
+    const newName = prompt("Enter new filename", item.filename)
+    if (!newName || newName.trim() === item.filename) return
+    await fetch(`/api/files`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet: userAddress, id: item._id, filename: newName.trim() })
+    })
+    await mutate()
+  }
+
+  async function handleDelete(item: FileItem) {
+    if (!confirm(`Delete ${item.filename}? This only removes metadata.`)) return
+    await fetch(`/api/files?wallet=${encodeURIComponent(userAddress as string)}&id=${encodeURIComponent(item._id)}`, {
+      method: 'DELETE'
+    })
+    await mutate()
+  }
 
   if (!userAddress) {
     return <p className="text-sm text-muted-foreground">Connect your wallet to see your files.</p>
@@ -96,29 +104,23 @@ export function FileList({ userAddress }: Props) {
       {data.map((cid, originalIdx) => {
         const reversedIdx = data.length - 1 - originalIdx
         const short = cid.length > 20 ? `${cid.slice(0, 10)}...${cid.slice(-8)}` : cid
-        const isLatest = reversedIdx === data.length - 1 // Last item in original array is latest
+        const isLatest = reversedIdx === data.length - 1
         return (
           <div key={cid + originalIdx} className="flex items-center justify-between rounded-md border p-3">
             <div className="text-sm">
               <div className="flex items-center gap-2">
                 <div className="font-medium">{short}</div>
                 {isLatest && (
-                  <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                    Latest
-                  </span>
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Latest</span>
                 )}
               </div>
               <div className="text-xs text-muted-foreground break-all">{cid}</div>
             </div>
             <div className="flex items-center gap-2">
               <Button asChild size="sm" variant="secondary">
-                <a href={`https://gateway.pinata.cloud/ipfs/${cid}`} target="_blank" rel="noreferrer">
-                  View
-                </a>
+                <a href={`${process.env.NEXT_PUBLIC_IPFS_GATEWAY || "https://ipfs.io/ipfs"}/${cid}`} target="_blank" rel="noreferrer">View</a>
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => mutate()}>
-                Refresh
-              </Button>
+              <Button size="sm" variant="ghost" onClick={() => mutate()}>Refresh</Button>
             </div>
           </div>
         )

@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import axios from "axios"
+import { addFile, addFileViaHttp } from "@/lib/helia-browser"
+import { putFileDoc } from "@/lib/orbitdb-browser"
+import { useHelia } from "@/hooks/useHelia"
 
 declare global {
   interface Window {
@@ -19,13 +21,33 @@ type Props = {
 }
 
 export function FileUpload({ userAddress }: Props) {
+  const { ready, error: heliaError } = useHelia()
   const [file, setFile] = useState<File | null>(null)
-  const [jwt, setJwt] = useState("")
   const [uploading, setUploading] = useState(false)
   const [cid, setCid] = useState<string | null>(null)
+  const [folder, setFolder] = useState<string>("")
+  const [tags, setTags] = useState<string>("")
   const { toast } = useToast()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_SIZE_BYTES = 50 * 1024 * 1024 // 50MB
+  const ACCEPTED_TYPES = [
+    "image/",
+    "application/pdf",
+    "text/plain",
+  ]
+
+  function validateFile(f: File) {
+    if (f.size > MAX_SIZE_BYTES) {
+      throw new Error("File too large (max 50MB)")
+    }
+    const okType = ACCEPTED_TYPES.some((t) => t.endsWith("/") ? f.type.startsWith(t) : f.type === t)
+    if (!okType) {
+      // Allow unknown types but warn user; comment this line to hard-block
+      // throw new Error("Unsupported file type")
+    }
+  }
 
   const handleUpload = async () => {
     if (!userAddress) {
@@ -36,39 +58,53 @@ export function FileUpload({ userAddress }: Props) {
       toast({ title: "No file selected", variant: "destructive" })
       return
     }
-    if (!jwt.trim()) {
-      toast({ title: "JWT required", description: "Please enter your Pinata JWT token", variant: "destructive" })
+    if (!ready) {
+      toast({ title: "IPFS node starting…", description: "Please wait a moment and try again." })
       return
     }
 
     try {
       setUploading(true)
+      validateFile(file)
 
-      const form = new FormData()
-      form.append("file", file, file.name)
-
-      // Upload directly to Pinata using plain JWT
-      const response = await axios.post(
-        "https://api.pinata.cloud/pinning/pinFileToIPFS",
-        form,
-        {
-          headers: {
-            "Authorization": `Bearer ${jwt}`,
-          },
-          timeout: 30000,
+      // 1) Upload to IPFS via Helia (browser), fallback to HTTP client
+      let fileCid = ""
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer())
+        try {
+          fileCid = await addFile(bytes)
+        } catch (e) {
+          fileCid = await addFileViaHttp(bytes)
         }
-      )
-
-      const fileCid = response.data.IpfsHash
+      } catch (e: any) {
+        throw new Error(e?.message || "Failed to add file to IPFS (Helia)")
+      }
       setCid(fileCid)
-
       toast({ title: "File uploaded to IPFS", description: `CID: ${fileCid}` })
+
+      // 2) Store metadata in OrbitDB
+      try {
+        await putFileDoc({
+          _id: `${userAddress}:${fileCid}`,
+          wallet: userAddress,
+          cid: fileCid,
+          filename: file.name,
+          size: file.size,
+          mime: file.type || "application/octet-stream",
+          createdAt: Date.now(),
+          folder: folder.trim() || undefined,
+          tags: tags.split(",").map(s => s.trim()).filter(Boolean),
+        })
+      } catch (e: any) {
+        throw new Error(e?.message || "Failed to store metadata in OrbitDB")
+      }
 
       // Reset form and redirect to dashboard for next upload
       setTimeout(() => {
         setFile(null)
-        setJwt("")
         setCid(null)
+        setFolder("")
+        setTags("")
         // Clear file input value
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
@@ -78,19 +114,7 @@ export function FileUpload({ userAddress }: Props) {
 
     } catch (error: any) {
       console.error("Upload error:", error)
-
-      let errorMessage = "Upload failed"
-      if (error.response?.status === 403) {
-        errorMessage = "Authentication failed. Check your Pinata JWT token."
-      } else if (error.response?.status === 401) {
-        errorMessage = "Invalid JWT token. Check your token from Pinata Dashboard."
-      }
-
-      toast({
-        title: "Upload failed",
-        description: errorMessage,
-        variant: "destructive"
-      })
+      toast({ title: "Upload failed", description: error?.message || "Unexpected error", variant: "destructive" })
     } finally {
       setUploading(false)
     }
@@ -107,25 +131,25 @@ export function FileUpload({ userAddress }: Props) {
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           disabled={uploading}
         />
+        <p className="text-xs text-muted-foreground">Max 50MB. Images, PDF, and text are recommended.</p>
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="pinata-jwt">Pinata JWT Token</Label>
-        <Input
-          id="pinata-jwt"
-          type="password"
-          placeholder="Enter your Pinata JWT token"
-          value={jwt}
-          onChange={(e) => setJwt(e.target.value)}
-          disabled={uploading}
-        />
+        <Label htmlFor="folder">Folder (optional)</Label>
+        <Input id="folder" value={folder} onChange={(e) => setFolder(e.target.value)} disabled={uploading} />
       </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="tags">Tags (comma-separated)</Label>
+        <Input id="tags" value={tags} onChange={(e) => setTags(e.target.value)} disabled={uploading} />
+      </div>
+
 
       <Button
         onClick={handleUpload}
-        disabled={!file || !jwt.trim() || uploading}
+        disabled={!file || uploading}
       >
-        {uploading ? "Uploading to Pinata…" : "Upload to Pinata"}
+        {uploading ? "Uploading…" : "Upload"}
       </Button>
 
       {cid && (
@@ -133,10 +157,6 @@ export function FileUpload({ userAddress }: Props) {
           <p className="text-sm font-medium text-green-800 mb-2">File uploaded successfully!</p>
             </div>
       )}
-
-      <p className="text-xs text-muted-foreground">
-        Enter your Pinata JWT token and select a file to upload directly to Pinata.
-      </p>
     </div>
   )
 }

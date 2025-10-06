@@ -30,6 +30,16 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
   const [address, setAddress] = useState<string | null>(null)
   const [chainOk, setChainOk] = useState<boolean>(false)
   const { toast } = useToast()
+  
+  function openMetaMaskOnboardingWindow() {
+    // Open MetaMask download/onboarding in a compact popup
+    const url = "https://metamask.io/download.html"
+    window.open(
+      url,
+      "metamaskOnboarding",
+      "width=420,height=720,menubar=no,toolbar=no,location=no,status=no"
+    )
+  }
 
   useEffect(() => {
     if (!window.ethereum) return
@@ -97,9 +107,10 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
 
   async function connect() {
     if (!window.ethereum) {
+      openMetaMaskOnboardingWindow()
       toast({
-        title: "MetaMask not found",
-        description: "Please install MetaMask to continue.",
+        title: "MetaMask required",
+        description: "A MetaMask window was opened to install or create a wallet.",
         variant: "destructive",
       })
       return
