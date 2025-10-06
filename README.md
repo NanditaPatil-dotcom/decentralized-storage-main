@@ -1,6 +1,6 @@
 # Decentralized File Storage (Polygon Amoy)
 
-A React + Next.js DApp that uploads files to IPFS via OrbitDB and stores their CIDs on-chain using a Solidity contract deployed to Polygon Amoy (80002).
+A React + Next.js DApp that uploads files to IPFS  and stores their CIDs on-chain using a Solidity contract deployed to Polygon Amoy (80002).
 
 ## Tech
 
@@ -14,7 +14,6 @@ A React + Next.js DApp that uploads files to IPFS via OrbitDB and stores their C
 - select polygon almoy as the testnet
 - pump the currency(POL) in the wallet for the gas
 - depending on the wallet balance, the files get uploaded
-- no Pinata account/JWT is required
 
 ## codeflow:
 1.User (Browser w/ MetaMask)
