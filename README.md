@@ -1,6 +1,6 @@
 # Decentralized File Storage (Polygon Amoy)
 
-A React + Next.js DApp that uploads files to IPFS  and stores their CIDs on-chain using a Solidity contract deployed to Polygon Amoy (80002).
+A React + Next.js DApp that uploads files to IPFS and stores their CIDs on-chain using a Solidity contract deployed to Polygon Amoy (80002).
 
 ## Tech
 
@@ -9,38 +9,40 @@ A React + Next.js DApp that uploads files to IPFS  and stores their CIDs on-chai
 - IPFS via Helia (no custodial pinning, runs in-browser)
 - Solidity contract for user => CID[] mapping
 
-## To access your storage:
-- create a wallet on Metamask
-- select polygon almoy as the testnet
-- pump the currency(POL) in the wallet for the gas
-- depending on the wallet balance, the files get uploaded
+## To access your storage
 
-## codeflow:
-1.User (Browser w/ MetaMask)
-2.Frontend (React + ethers.js + Tailwind)
-        |--> User selects file (Upload button)
-        >
+1. Create a wallet on MetaMask  
+2. Select Polygon Amoy as the testnet  
+3. Add POL test tokens for gas  
+4. Depending on your wallet balance, files will be uploaded  
+
+## Code Flow
+
+```text
+User (Browser w/ MetaMask)
+   ↓
+Frontend (React + ethers.js + Tailwind)
+   └──> User selects file (Upload button)
+        ↓
 Backend API (Express/Node.js)
-        |--> Receives file via POST /upload
-        |--> Adds file to IPFS via Helia (in browser)
-        >
-        IPFS (Helia / public gateways)
-        |--> Returns CID (Qm...123)
-        >
+   └──> Receives file via POST /upload
+        └──> Adds file to IPFS via Helia (in browser)
+             ↓
+IPFS (Helia / public gateways)
+   └──> Returns CID (Qm...123)
+        ↓
 Backend
-        |--> Calls Smart Contract (Hardhat + Alchemy RPC)
-               function uploadFile(CID)
-        >
+   └──> Calls Smart Contract (Hardhat + Alchemy RPC)
+        └──> function uploadFile(CID)
+             ↓
 Polygon Amoy Testnet (Smart Contract)
-        |--> Stores CID under user’s address
-        >
+   └──> Stores CID under user’s address
+        ↓
 Frontend (React)
-        |--> Calls contract.getFiles(userAddress)
-        |--> Gets CID list
-        >
-       IPFS
-        |--> https://ipfs.io/ipfs/<CID>
-        >
+   └──> Calls contract.getFiles(userAddress)
+        └──> Gets CID list
+             ↓
+IPFS
+   └──> https://ipfs.io/ipfs/<CID>
+        ↓
 User (Downloads/Views File)
-
-
