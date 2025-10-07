@@ -7,8 +7,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Decentralized File Storage',
-  description: 'Store files on IPFS (Helia) with OrbitDB metadata and optional on-chain CIDs',
-  generator: 'v0.app',
+  description: 'Store files on IPFS using Filebase and optional on-chain CID(supabase)',
 }
 
 export default function RootLayout({

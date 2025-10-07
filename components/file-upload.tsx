@@ -55,10 +55,6 @@ export function FileUpload({ userAddress }: Props) {
     
     // Type validation (warning only for now)
     const okType = ACCEPTED_TYPES.some((t) => t.endsWith("/") ? f.type.startsWith(t) : f.type === t)
-    if (!okType && f.type) {
-      // Allow unknown types but warn user; uncomment next line to hard-block
-      // throw new Error("Unsupported file type")
-    }
   }
 
   const handleUpload = async () => {

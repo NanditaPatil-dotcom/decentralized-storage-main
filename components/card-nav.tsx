@@ -111,8 +111,6 @@ const CardNav: React.FC<CardNavProps> = ({
     }
   }, [ease, items])
 
-  // Note: Resize listener removed to avoid addEventListener
-  // Navigation will use fixed dimensions
 
   const toggleMenu = () => {
     const tl = tlRef.current
