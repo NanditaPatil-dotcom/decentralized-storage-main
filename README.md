@@ -28,16 +28,7 @@ Download Files: Retrieve files via IPFS/Filebase gateway using CID.
 
 Optional On-Chain Anchoring: Store file ownership proof in your existing Solidity contract.
 
-Project Structure
-/frontend
-  ├─ pages/
-  │   ├─ index.js        # Landing / Login
-  │   ├─ dashboard.js    # File upload + file list
-  ├─ components/
-  │   └─ FileUpload.js
-/backend (serverless API routes in Next.js)
-  ├─ /api/upload.js      # Handles file upload to Filebase + Supabase insert
-  ├─ /api/files.js       # Fetch wallet’s file list from Supabase
+
 
 How It Works
 
