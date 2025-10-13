@@ -81,7 +81,7 @@ export function FileList({ userAddress }: Props) {
     return (
       <div className="space-y-2">
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p className="text-sm text-yellow-800 mb-2">⚠️ Unable to load files</p>
+          <p className="text-sm text-yellow-800 mb-2">Unable to load files</p>
           <p className="text-xs text-yellow-700">{(error as Error).message}</p>
         </div>
       </div>

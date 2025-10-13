@@ -8,9 +8,9 @@ import dynamic from 'next/dynamic'
 import { ComponentProps } from 'react'
 import { ClientOnly } from './client-only-wrapper'
 
-// Dynamic PixelBlast component
-export const DynamicPixelBlast = dynamic(
-  () => import('@/components/PixelBlast'),
+// Dynamic Plasma background component
+export const DynamicPlasma = dynamic(
+  () => import('@/components/plasma'),
   {
     ssr: false,
     loading: () => (
@@ -72,6 +72,28 @@ export const DynamicFileUpload = dynamic(
 )
 
 
+// Dynamic Steps component
+export const DynamicSteps = dynamic(
+  () => import('@/components/steps').then(mod => ({ default: mod.Steps })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="p-6 border rounded-lg bg-white/5 border-white/10 backdrop-blur-sm animate-pulse">
+              <div className="w-12 h-12 bg-white/20 rounded-full mx-auto mb-4"></div>
+              <div className="h-4 bg-white/20 rounded mb-2"></div>
+              <div className="h-3 bg-white/20 rounded mb-1"></div>
+              <div className="h-3 bg-white/20 rounded w-3/4"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  }
+)
+
 // Dynamic WalletConnect component - uses Web3 providers internally
 export const DynamicWalletConnect = dynamic(
   () => import('@/components/wallet-connect').then(mod => ({ default: mod.WalletConnect })),
@@ -86,8 +108,9 @@ export const DynamicWalletConnect = dynamic(
 )
 
 // Type exports for convenience
-export type PixelBlastProps = ComponentProps<typeof DynamicPixelBlast>
+export type PlasmaProps = ComponentProps<typeof DynamicPlasma>
 export type CardNavProps = ComponentProps<typeof DynamicCardNav>
 export type GlowingFeatureCardsProps = ComponentProps<typeof DynamicGlowingFeatureCards>
+export type StepsProps = ComponentProps<typeof DynamicSteps>
 export type FileUploadProps = ComponentProps<typeof DynamicFileUpload>
 export type WalletConnectProps = ComponentProps<typeof DynamicWalletConnect>

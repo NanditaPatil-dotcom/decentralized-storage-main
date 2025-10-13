@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/simple-toast"
 import { uploadToServer } from "@/lib/server-upload"
 import { Progress } from "@/components/ui/progress"
+import { uploadCidOnChain } from "@/lib/contract"
 
 declare global {
   interface Window {
@@ -24,6 +25,8 @@ export function FileUpload({ userAddress }: Props) {
   const [uploading, setUploading] = useState(false)
   const [cid, setCid] = useState<string | null>(null)
   const [progress, setProgress] = useState<number>(0)
+  const [status, setStatus] = useState<string>("")
+  const [txHash, setTxHash] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,10 +95,26 @@ export function FileUpload({ userAddress }: Props) {
           throw new Error("Server did not return a CID")
         }
         setCid(cidFromServer)
-        toast({ 
-          title: "File uploaded",
-          description: `CID: ${cidFromServer}` 
+        toast({
+          title: "File uploaded to storage",
+          description: `CID: ${cidFromServer}`
         })
+        setStatus("Recording CID on-chain...")
+
+        // Record CID on-chain
+        const tx = await uploadCidOnChain(cidFromServer)
+        setTxHash(tx.hash)
+        setStatus("Waiting for transaction confirmation...")
+        setUploading(true) // Keep uploading true for tx wait
+        await tx.wait(1)
+        setStatus("Transaction confirmed")
+        setUploading(false)
+
+        toast({
+          title: "CID recorded on-chain",
+          description: `Transaction: ${tx.hash}`
+        })
+
         // Notify server-file-list to refresh
         try {
           window.dispatchEvent(new CustomEvent("server-upload-complete", { detail: { walletAddress: userAddress, CID: cidFromServer, fileName: file.name, timestamp: new Date().toISOString() } }))
@@ -109,6 +128,8 @@ export function FileUpload({ userAddress }: Props) {
       setTimeout(() => {
         setFile(null)
         setCid(null)
+        setStatus("")
+        setTxHash(null)
         // Clear file input value
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
@@ -118,7 +139,12 @@ export function FileUpload({ userAddress }: Props) {
 
     } catch (error: any) {
       console.error("Upload error:", error)
-      toast({ title: "Upload failed", description: error?.message || "Unexpected error", variant: "destructive" })
+      let errorMessage = error?.message || "Unexpected error"
+      if (errorMessage.toLowerCase().includes("insufficient funds") || errorMessage.toLowerCase().includes("gas")) {
+        errorMessage = "Insufficient funds for transaction. Please get some test POL from the Amoy faucet."
+      }
+      toast({ title: "Upload failed", description: errorMessage, variant: "destructive" })
+      setTxHash(null)
     } finally {
       setUploading(false)
     }
@@ -134,6 +160,7 @@ export function FileUpload({ userAddress }: Props) {
           ref={fileInputRef}
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           disabled={uploading}
+          placeholder="Browse... No file selected..."
         />
         <p className="text-xs text-muted-foreground">Max 50MB. Images, PDF, and text are recommended.</p>
       </div>
@@ -144,18 +171,25 @@ export function FileUpload({ userAddress }: Props) {
           <Label>Upload progress</Label>
           <Progress value={progress} />
           <div className="text-xs text-muted-foreground">{progress}%</div>
+          {status && <p className="text-sm text-blue-600">{status}</p>}
+          {txHash && (
+            <p className="text-sm text-blue-600">
+              Transaction: <a href={`https://www.oklink.com/amoy/tx/${txHash}`} target="_blank" rel="noreferrer" className="underline">{txHash.slice(0, 10)}...{txHash.slice(-8)}</a>
+            </p>
+          )}
         </div>
       )}
 
       <Button
         onClick={handleUpload}
         disabled={!file || uploading}
+        className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
       >
         {uploading ? `Uploading… ${progress}%` : `Upload`}
       </Button>
 
       {cid && (
-        <div className="p-3 bg-black-50 border rounded-md">
+        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
           <p className="text-sm font-medium text-green-800 mb-2">File uploaded successfully!</p>
           <p className="text-xs break-all">CID: {cid}</p>
         </div>

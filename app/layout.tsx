@@ -3,11 +3,12 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import { ToastProvider } from '@/components/ui/simple-toast'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Decentralized File Storage',
-  description: 'Store files on IPFS using Filebase and optional on-chain CID(supabase)',
+  title: 'Vaultix',
+  description: 'Decentralized File Storage',
 }
 
 export default function RootLayout({
@@ -21,9 +22,16 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Sixtyfour&display=swap" rel="stylesheet" />
       </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

@@ -1,22 +1,9 @@
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { verifyMessage } from "ethers";
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 // Ensure Node.js runtime for S3 and Buffer usage
 export const runtime = "nodejs";
-
-// Initialize Supabase client with service role key (server-only)
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn("Missing Supabase environment variables: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY");
-}
-
-const supabaseServer = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-  : null;
 
 // Filebase S3 client
 const s3Config = {
@@ -38,13 +25,6 @@ export async function POST(req: NextRequest) {
     if (!s3) {
       return NextResponse.json(
         { success: false, error: "Filebase S3 not configured" },
-        { status: 500 }
-      );
-    }
-
-    if (!supabaseServer) {
-      return NextResponse.json(
-        { success: false, error: "Supabase not configured" },
         { status: 500 }
       );
     }
@@ -128,25 +108,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Store mapping in Supabase: files(wallet_address, file_name, cid, file_key)
-    const { error } = await supabaseServer
-      .from("files")
-      .insert([
-        {
-          wallet_address: walletAddress.toLowerCase(),
-          file_name: originalName,
-          cid: cid,
-          file_key: key,
-        },
-      ]);
-
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return NextResponse.json(
-        { success: false, error: "Failed to insert record into Supabase" },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json({ success: true, CID: cid });
   } catch (err: any) {

@@ -1,3 +1,5 @@
+
+
 Decentralized File Storage DApp
 
 A Web3-powered decentralized file storage platform that allows users to securely upload, store, and retrieve files using IPFS/Filebase with wallet-based authentication. Metadata is persisted in Supabase for cross-browser access.
@@ -123,4 +125,13 @@ Files are stored decentralized on IPFS/Filebase.
 
 Supabase is used only as an index for wallet → CID mapping to enable cross-browser persistence.
 
-All wallet interactions are verified using signed messages → secure authentication.
+All wallet interactions are verified using signed messages → secure authentication
+# Vaultix - Web3
+User 
+->
+Frontend (Next.js + ethers.js)
+->
+Filebase/IPFS [stores actual files]
+->
+Polygon Smart Contract [stores file CIDs (and links them to wallet)]
+

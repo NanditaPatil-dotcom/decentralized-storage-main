@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { 
+import {
   DynamicFileUpload as FileUpload
 } from "@/components/dynamic-client-components"
 import { ServerFileList } from "@/components/server-file-list"
@@ -22,7 +22,7 @@ export default function Page() {
     if (storedAddress) {
       setAddress(storedAddress)
     } else {
-      // Redirect to home if no address found
+      // No address, redirect to home
       router.push('/')
     }
   }, [router])
@@ -46,17 +46,18 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-dvh bg-background text-foreground">
-      <header className="w-full border-b">
+    <main className="min-h-dvh bg-gray-950 text-white">
+      <header className="w-full border-b border-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-pretty">Decentralized File Storage</h1>
+          <h1 className="text-lg font-semibold text-white">Vaultix</h1>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-gray-400">
               {address?.slice(0, 6)}...{address?.slice(-4)}
             </span>
             <Button
               variant="outline"
               size="sm"
+              className="border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
               onClick={() => {
                 localStorage.clear()
                 window.location.href = '/'
@@ -68,25 +69,35 @@ export default function Page() {
         </div>
       </header>
 
-      <section className="container mx-auto px-4 py-8 grid gap-6 md:grid-cols-2">
-        <Card>
+      <section className="container mx-auto px-4 py-8 grid gap-6">
+        <Card className="bg-gray-900 border-gray-800">
           <CardHeader>
-<CardTitle className="text-pretty">Upload a File</CardTitle>
+            <CardTitle className="text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              </svg>
+              Upload a File
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <FileUpload userAddress={address} />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gray-900 border-gray-800">
           <CardHeader>
-            <CardTitle className="text-pretty">Your Files</CardTitle>
+            <CardTitle className="text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Your Files
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Files uploaded via the server route are stored on Filebase (S3/IPFS) and indexed in Supabase.
+            <p className="text-sm text-gray-400 mb-4">
+              Files uploaded via the server route are stored on Filebase (S3/IPFS) and stored using Solidity.
             </p>
-            <Separator className="my-4" />
+            <Separator className="my-4 bg-gray-700" />
             <ServerFileList userAddress={address} />
           </CardContent>
         </Card>

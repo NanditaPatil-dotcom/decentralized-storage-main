@@ -42,17 +42,17 @@ export default function GlowingFeatureCards() {
     {
       icon: <Lock className="h-8 w-8" />,
       title: "Own Your Data",
-      description: "No middlemen. Vaultify lets you store, manage, and share your files securely through decentralized storage networks — ensuring complete control and transparency every step of the way.",
+      description: "No middlemen. Vaultix lets you store, manage, and share your files securely through decentralized storage networks — ensuring complete control and transparency every step of the way.",
     },
     {
       icon: <Zap className="h-8 w-8" />,
       title: "Instant Access",
-      description: "Experience lightning-fast retrieval for your encrypted files. Vaultify’s system ensures data is always available, accessible, and resistant to censorship or single-point failures.",
+      description: "Experience lightning-fast retrieval for your encrypted files. Vaultix’s system ensures data is always available, accessible, and resistant to censorship or single-point failures.",
     },
     {
       icon: <ShieldCheck className="h-8 w-8" />,
       title: "Privacy by Design",
-      description: "Your keys, your control — always. Vaultify employs end-to-end encryption and user-owned authentication, ensuring your data remains confidential, verifiable, and truly yours forever.",
+      description: "Your keys, your control — always. Vaultix employs end-to-end encryption and user-owned authentication, ensuring your data remains confidential, verifiable, and truly yours forever.",
     },
   ]
 

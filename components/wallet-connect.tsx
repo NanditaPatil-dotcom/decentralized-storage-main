@@ -82,10 +82,12 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
       }
       ;(async () => {
         try {
-          const accounts: string[] = await window.ethereum.request({ method: "eth_accounts" })
-          if (accounts && accounts.length) {
-            setAddress(accounts[0])
-            onConnected?.(accounts[0])
+          if (typeof window !== 'undefined' && localStorage.getItem('hasConnected') === 'true') {
+            const accounts: string[] = await window.ethereum.request({ method: "eth_accounts" })
+            if (accounts && accounts.length) {
+              setAddress(accounts[0])
+              onConnected?.(accounts[0])
+            }
           }
           const chainId: string = await window.ethereum.request({ method: "eth_chainId" })
           setChainOk(chainId === AMOY_CHAIN_ID_HEX)
@@ -162,10 +164,9 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
 
   async function connect() {
     if (typeof window === "undefined" || !window.ethereum) {
-      openMetaMaskOnboardingWindow()
       toast({
         title: "MetaMask required",
-        description: "A MetaMask window was opened to install or create a wallet.",
+        description: "Please install the MetaMask extension to connect your wallet.",
         variant: "destructive",
       })
       return
@@ -178,6 +179,7 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
       if (accounts && accounts.length) {
         setAddress(accounts[0])
         onConnected?.(accounts[0])
+        if (typeof window !== 'undefined') localStorage.setItem('hasConnected', 'true')
         toast({ title: "Connected", description: accounts[0] })
       }
     } catch (err: any) {

@@ -26,7 +26,7 @@ export function HeaderNav({ address, onConnected, onDisconnected }: HeaderNavPro
             {/* Brand */}
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#9b5cff] to-[#00bfff]" />
-              <span className="text-sm font-semibold tracking-wide text-white/90">Vaultify</span>
+              <span className="text-sm font-semibold tracking-wide text-white/90">Vaultix</span>
             </div>
 
             {/* Nav Items */}
