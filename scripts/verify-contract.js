@@ -53,13 +53,13 @@ async function verifyContract() {
 
   try {
     // Connect to provider
-    console.log('\n2. Connecting to Polygon Amoy testnet...')
+    console.log('\n2. Connecting to Ethereum Sepolia testnet...')
     const provider = new ethers.JsonRpcProvider(rpcUrl)
     const network = await provider.getNetwork()
     console.log('connected to network:', network.name, 'chain id:', network.chainId)
 
-    if (network.chainId !== 80002n) {
-      console.warn('warning: expected chain id 80002 (polygon amoy), got', network.chainId)
+    if (network.chainId !== 11155111n) {
+      console.warn('warning: expected chain id 11155111 (ethereum sepolia), got', network.chainId)
     }
 
     // Check if contract exists
@@ -111,9 +111,9 @@ async function verifyContract() {
 
     console.log('\nContract verification complete - Everything looks good!')
     console.log('\nIf you\'re still having issues:')
-    console.log('1. make sure MetaMask is connected to Polygon Amoy testnet')
+    console.log('1. make sure MetaMask is connected to Ethereum Sepolia testnet')
     console.log('2. clear browser cache and restart the dev server')
-    console.log('3. check that your wallet has POL tokens for gas')
+    console.log('3. check that your wallet has Sepolia ETH for gas')
 
   } catch (error) {
     console.error('\nError during verification:', error.message)
@@ -127,7 +127,7 @@ async function verifyContract() {
     
     console.log('\n to resolve this:')
     console.log('1. verify your Alchemy API key is valid')
-    console.log('2. check if the contract is deployed: https://amoy.polygonscan.com/address/' + contractAddress)
+    console.log('2. check if the contract is deployed: https://sepolia.etherscan.io/address/' + contractAddress)
     console.log('3. try redeploying the contract')
   }
 }

@@ -11,14 +11,16 @@ type Props = {
   className?: string
 }
 
-const AMOY_CHAIN_ID_HEX = "0x13882" // 80002
-const AMOY_PARAMS = {
-  chainId: AMOY_CHAIN_ID_HEX,
-  chainName: "Polygon Amoy",
-  nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
-  rpcUrls: ["https://rpc-amoy.polygon.technology/"],
-  blockExplorerUrls: ["https://www.oklink.com/amoy"],
+const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7" // 11155111
+
+const SEPOLIA_PARAMS = {
+  chainId: SEPOLIA_CHAIN_ID_HEX,
+  chainName: "Sepolia",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: [process.env.NEXT_PUBLIC_RPC_URL!],
+  blockExplorerUrls: ["https://sepolia.etherscan.io"],
 }
+
 
 declare global {
   interface Window {
@@ -71,7 +73,7 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
           }
           
           chainHandler = (chainId: string) => {
-            setChainOk(chainId === AMOY_CHAIN_ID_HEX)
+            setChainOk(chainId === SEPOLIA_CHAIN_ID_HEX)
           }
           
           window.ethereum.on("accountsChanged", accountsHandler)
@@ -90,7 +92,7 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
             }
           }
           const chainId: string = await window.ethereum.request({ method: "eth_chainId" })
-          setChainOk(chainId === AMOY_CHAIN_ID_HEX)
+          setChainOk(chainId === SEPOLIA_CHAIN_ID_HEX)
         } catch {
           // ignore
         }
@@ -128,24 +130,24 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function ensureAmoy() {
+  async function ensureSepolia() {
     if (typeof window === "undefined" || !window.ethereum) return
     try {
       const chainId: string = await window.ethereum.request({ method: "eth_chainId" })
-      if (chainId === AMOY_CHAIN_ID_HEX) {
+      if (chainId === SEPOLIA_CHAIN_ID_HEX) {
         setChainOk(true)
         return
       }
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: AMOY_CHAIN_ID_HEX }],
+          params: [{ chainId: SEPOLIA_CHAIN_ID_HEX }],
         })
       } catch (switchError: any) {
         if (switchError?.code === 4902) {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
-            params: [AMOY_PARAMS],
+            params: [SEPOLIA_PARAMS],
           })
         } else {
           throw switchError
@@ -156,7 +158,7 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
       setChainOk(false)
       toast({
         title: "Network error",
-        description: "Please add/switch to Polygon Amoy in MetaMask.",
+        description: "Please add or switch to Ethereum Sepolia in MetaMask.",
         variant: "destructive",
       })
     }
@@ -171,7 +173,7 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
       })
       return
     }
-    await ensureAmoy()
+    await ensureSepolia()
     try {
       const accounts: string[] = await window.ethereum.request({
         method: "eth_requestAccounts",
@@ -202,9 +204,9 @@ export function WalletConnect({ onConnected, onDisconnected, className }: Props)
       ) : (
         <>
           <span className={cn("text-sm", chainOk ? "text-foreground" : "text-destructive")}>
-            {short} {chainOk ? "(Amoy)" : "(Wrong network)"}
+            {short} {chainOk ? "(Sepolia)" : "(Wrong network)"}
           </span>
-          <Button variant="secondary" onClick={ensureAmoy}>
+          <Button variant="secondary" onClick={ensureSepolia}>
             Switch Network
           </Button>
           <Button variant="ghost" onClick={disconnect}>

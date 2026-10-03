@@ -27,10 +27,10 @@ async function fetchFiles(userAddress: string): Promise<string[]> {
     return files
   } catch (error: any) {
     if (error.code === 'BAD_DATA' || error.message.includes('could not decode result data')) {
-      throw new Error(`Contract data decode error. Make sure you're connected to Polygon Amoy testnet and the contract is deployed correctly. Contract: ${CONTRACT_ADDRESS}`)
+      throw new Error(`Contract data decode error. Make sure you're connected to Ethereum Sepolia and the contract is deployed correctly. Contract: ${CONTRACT_ADDRESS}`)
     }
     if (error.code === 'CALL_EXCEPTION') {
-      throw new Error(`Contract call failed. Check if MetaMask is connected to Polygon Amoy testnet (Chain ID: 80002)`) 
+      throw new Error(`Contract call failed. Check if MetaMask is connected to Ethereum Sepolia (Chain ID: 11155111)`)
     }
     throw error
   }

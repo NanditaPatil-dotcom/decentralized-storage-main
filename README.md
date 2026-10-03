@@ -2,7 +2,7 @@
 ##  Overview
 
 **Decentralised Storage** is a decentralized file storage web application that allows users to securely upload, store, and retrieve files using blockchain technology.
-Authentication is handled by **MetaMask**, file storage is powered by **Filebase (IPFS)**, and the **Polygon Amoy Testnet** ensures on-chain proof of ownership and file persistence.
+Authentication is handled by **MetaMask**, file storage is powered by **Filebase (IPFS)**, and the **Ethereum Sepolia Testnet** ensures on-chain proof of ownership and file persistence.
 
 In simple terms: You own your files, and no centralized entity can take them down.
 
@@ -19,7 +19,7 @@ Frontend (Next.js + ethers.js)
   ↓
 Filebase/IPFS ← stores actual files  
   ↓
-Polygon Smart Contract ← stores file CIDs and links them to wallet addresses
+Ethereum Smart Contract ← stores file CIDs and links them to wallet addresses
 ```
 
 ### 🔍 Step-by-Step Process
@@ -37,7 +37,7 @@ Polygon Smart Contract ← stores file CIDs and links them to wallet addresses
 
 3. **Smart Contract Interaction:**
 
-   * The CID is sent to a deployed **Polygon smart contract**, where it is mapped to the user’s wallet address.
+   * The CID is sent to a deployed **Ethereum smart contract**, where it is mapped to the user’s wallet address.
    * This ensures that the file’s ownership and history are recorded **on-chain**, making it verifiable and immutable.
 
 4. **File Retrieval:**
@@ -50,23 +50,22 @@ Polygon Smart Contract ← stores file CIDs and links them to wallet addresses
 ## Tech Stack
 
 * **Frontend:** Next.js, Tailwind CSS, Ethers.js
-* **Blockchain:** Solidity (Polygon Amoy Testnet)
+* **Blockchain:** Solidity (Ethereum Sepolia Testnet)
 * **Storage:** Filebase (IPFS)
 * **Wallet Integration:** MetaMask
 * **Hosting:** Vercel
 
 ---
 
-## Polygon Amoy Network Configuration
+## Ethereum Sepolia Network Configuration
 
 | Field              | Value                                                                        |
 | ------------------ | ---------------------------------------------------------------------------- |
-| **Network Name**   | Polygon Amoy                                                                 |
-| **RPC URL**        | [https://rpc-amoy.polygon.technology/](https://rpc-amoy.polygon.technology/) |
-| **Chain ID**       | 80002                                                                        |
-| **Currency**       | POL                                                                          |
-| **Block Explorer** | [https://www.oklink.com/amoy](https://www.oklink.com/amoy)                   |
-
+| **Network Name**   | Ethereum Sepolia                                                            |
+| **RPC URL**        | Your configured Sepolia RPC endpoint                                        |
+| **Chain ID**       | 11155111                                                                     |
+| **Currency**       | ETH                                                                          |
+| **Block Explorer** | [https://sepolia.etherscan.io](https://sepolia.etherscan.io)               |
 
 
 

@@ -2,7 +2,7 @@ import { ethers } from "ethers"
 import ContractABI from "../abis/DecentralizedStorage.json"
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://rpc-amoy.polygon.technology/"
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL
 
 /**
  * Get a read-only contract (uses JsonRpcProvider) or a signer-backed contract (MetaMask)
@@ -16,6 +16,7 @@ export function getContractWithProvider(providerOrSigner: ethers.Provider | ethe
  * Get read-only contract using RPC provider (useful for preloads)
  */
 export function getReadOnlyContract() {
+  if (!RPC_URL) throw new Error("NEXT_PUBLIC_RPC_URL must be configured for Ethereum Sepolia")
   const provider = new ethers.JsonRpcProvider(RPC_URL)
   return getContractWithProvider(provider)
 }

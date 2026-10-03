@@ -141,7 +141,7 @@ export function FileUpload({ userAddress }: Props) {
       console.error("Upload error:", error)
       let errorMessage = error?.message || "Unexpected error"
       if (errorMessage.toLowerCase().includes("insufficient funds") || errorMessage.toLowerCase().includes("gas")) {
-        errorMessage = "Insufficient funds for transaction. Please get some test POL from the Amoy faucet."
+        errorMessage = "Insufficient funds for transaction. Please get Sepolia ETH from a testnet faucet."
       }
       toast({ title: "Upload failed", description: errorMessage, variant: "destructive" })
       setTxHash(null)
@@ -174,7 +174,7 @@ export function FileUpload({ userAddress }: Props) {
           {status && <p className="text-sm text-blue-600">{status}</p>}
           {txHash && (
             <p className="text-sm text-blue-600">
-              Transaction: <a href={`https://www.oklink.com/amoy/tx/${txHash}`} target="_blank" rel="noreferrer" className="underline">{txHash.slice(0, 10)}...{txHash.slice(-8)}</a>
+              Transaction: <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer" className="underline">{txHash.slice(0, 10)}...{txHash.slice(-8)}</a>
             </p>
           )}
         </div>
